@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { MySqlDiff } from "./mysql-diff";
 import { Diff, ConnectionOptions } from "./diff";
 import { basename } from "path";
+import { URL } from "url";
 
 type DiffOptions = Omit<ConnectionOptions, "client">;
 

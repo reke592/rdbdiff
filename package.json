@@ -2,15 +2,22 @@
   "name": "@reke592/rdbdiff",
   "version": "0.0.0",
   "description": "Relational DB schema diff",
-  "main": "./src/cli.ts",
+  "bin": {
+    "rdbdiff": "./bin/rdbdiff.js"
+  },
+  "keywords": [
+    "database",
+    "diff",
+    "cli",
+    "npmtool"
+  ],
+  "main": "./lib/cli.js",
   "type": "commonjs",
   "scripts": {
-    "test": "ts-node . -- compare mysql://root:dev@mysql1:3306/dev mysql://root:dev@mysql2:3306/dev",
-    "cli": "ts-node .",
-    "pretest": "npm i",
-    "db": "node database/cli.js",
-    "production": "node .",
-    "development": "nodemon . --legacy-watch"
+    "test": "node . compare mysql://root:dev@localhost:33061/dev mysql://root:dev@localhost:33062/dev",
+    "clean": "rimraf ./lib",
+    "build": "npm run clean && tsc",
+    "prepublishOnly": "npm run build"
   },
   "author": "",
   "license": "ISC",
