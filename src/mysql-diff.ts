@@ -5,10 +5,6 @@ export class MySqlDiff extends Diff {
     super(options);
   }
 
-  async testConnection(): Promise<any> {
-    await this.raw(`SELECT 1;`);
-  }
-
   async getTables(): Promise<TableInfo[]> {
     let results = await this.raw(
       `

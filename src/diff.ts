@@ -1,4 +1,3 @@
-import debug from "debug";
 import { knex, Knex } from "knex";
 
 export type InformationSchema = {
@@ -25,13 +24,6 @@ export type ColumnInfo = {
   key: string;
   charMaxLength: number | null;
   ordinalPosition: number;
-};
-
-export type Difference = {
-  schemaType: "table" | "column";
-  remarks: "missing" | "mismatch";
-  table: string;
-  name: string;
 };
 
 export type Comparison = {
@@ -206,5 +198,4 @@ export abstract class Diff {
 
   abstract getTables(): Promise<TableInfo[]>;
   abstract getColumns(tableName: string): Promise<ColumnInfo[]>;
-  abstract testConnection(): Promise<any>;
 }
