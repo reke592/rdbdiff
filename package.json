@@ -15,6 +15,7 @@
   "type": "commonjs",
   "scripts": {
     "test": "node . compare mysql://root:dev@localhost:33061/dev mysql://root:dev@localhost:33062/dev",
+    "dev": "ts-node ./src/cli.ts compare mysql://root:dev@localhost:33061/dev mysql://root:dev@localhost:33062/dev",
     "clean": "rimraf ./lib",
     "build": "npm run clean && tsc",
     "prepublishOnly": "npm run build"

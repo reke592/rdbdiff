@@ -6,7 +6,7 @@ A tool to compare database schema.
 
 - MySql
   - ✅ Tables
-  - ⬛ Indexes
+  - ✅ Indexes
   - ⬛ Stored Procedures
   - ⬛ Functions
 

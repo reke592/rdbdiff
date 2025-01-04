@@ -1,4 +1,10 @@
-import { ColumnInfo, ConnectionOptions, Diff, TableInfo } from "./diff";
+import {
+  ColumnInfo,
+  ConnectionOptions,
+  Diff,
+  IndexInfo,
+  TableInfo,
+} from "./diff";
 
 export class MySqlDiff extends Diff {
   constructor(options: ConnectionOptions) {
@@ -49,6 +55,16 @@ export class MySqlDiff extends Diff {
       key: row.COLUMN_KEY,
       charMaxLength: row.CHARACTER_MAXIMUM_LENGTH,
       ordinalPosition: row.ORDINAL_POSITION,
+    }));
+  }
+
+  async getIndexes(tableName: string): Promise<IndexInfo[]> {
+    let results = await this.raw(`SHOW INDEX FROM ${tableName}`);
+    return results.map((row) => ({
+      key_name: row.Key_name,
+      isUnique: row.Mon_unique ? true : false,
+      column: row.Column_name,
+      sequence_no: row.Seq_in_index,
     }));
   }
 }
