@@ -97,8 +97,8 @@ export abstract class Diff {
     return result;
   }
 
-  log(message: any) {
-    console.log(this._label, message);
+  log(...message: any) {
+    console.log(this._label, ...message);
   }
 
   /**
@@ -114,7 +114,7 @@ export abstract class Diff {
     this.log("checking schema..");
     const tables = await this.getTables();
 
-    this.log(`total tables: ${tables.length}`);
+    this.log(`tables in ${this.dbname}: ${tables.length}`);
     for (let table of tables) {
       let columns = await this.getColumns(table.name).then((rows) =>
         rows.reduce((data: Record<string, ColumnInfo>, row) => {
@@ -122,20 +122,25 @@ export abstract class Diff {
           return data;
         }, {})
       );
+      let indexes = await this.getIndexes(table.name).then((results) =>
+        results.reduce(
+          (data: Record<string, Record<string, IndexInfo>>, row) => {
+            data[row.key_name] = data[row.key_name] || {};
+            data[row.key_name][row.column] = row;
+            return data;
+          },
+          {}
+        )
+      );
       this.schema.tables[table.name] = {
         engine: table.engine,
         columns: columns,
       };
-      this.schema.indexes[table.name] = await this.getIndexes(table.name).then(
-        (results) =>
-          results.reduce(
-            (data: Record<string, Record<string, IndexInfo>>, row) => {
-              data[row.key_name] = data[row.key_name] || {};
-              data[row.key_name][row.column] = row;
-              return data;
-            },
-            {}
-          )
+      this.schema.indexes[table.name] = indexes;
+      this.log(
+        `'${table.name}'`,
+        `columns: ${Object.keys(columns).length}`,
+        `index: ${Object.keys(indexes).length}`
       );
     }
 
