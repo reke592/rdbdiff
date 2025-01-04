@@ -28,6 +28,7 @@ Rebuild and Link the Package CLI
 
 ```sh
 npm i
+npm run build
 npm run test
 npm link .
 ```

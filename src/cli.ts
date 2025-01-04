@@ -37,8 +37,8 @@ program
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
     example:
-    schema mysql://user@localhost:3308/db1 mysql://user@localhost:3308/db2
-    schema mysql://user:secret@localhost:3308/db1 mysql://user:secret@localhost:3308/db2
+    rdbdiff compare mysql://user@localhost:3308/db1 mysql://user@localhost:3308/db2
+    rdbdiff compare mysql://user:secret@localhost:3308/db1 mysql://user:secret@localhost:3308/db2
     `
   )
   .summary("Check the difference between database schemas.")
