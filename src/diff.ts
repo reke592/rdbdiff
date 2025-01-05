@@ -47,6 +47,7 @@ export type ComparisonRemarks = "missing" | "mismatch";
 export type Comparison = {
   schemaType: SchemaType;
   name: string;
+  in?: string;
   ARemarks?: ComparisonRemarks;
   BRemarks?: ComparisonRemarks;
 };
@@ -74,8 +75,10 @@ export function compareSchemaObjects(
   schemaType: SchemaType,
   A: Record<any, any>,
   B: Record<any, any>,
-  compareValue: boolean = true,
-  name?: string
+  options?: {
+    in?: string;
+    name?: string;
+  }
 ): [diff: Comparison[], nodiffKeys: Set<string>] {
   const diff: Comparison[] = [];
   const nodiffKeys = new Set<string>();
@@ -84,21 +87,28 @@ export function compareSchemaObjects(
     if (A[prop] === undefined) {
       diff.push({
         schemaType: schemaType,
-        name: name || prop,
+        name: options?.name || prop,
+        in: options?.in,
         ARemarks: "missing",
         BRemarks: undefined,
       });
     } else if (B[prop] === undefined) {
       diff.push({
         schemaType: schemaType,
-        name: name || prop,
+        name: options?.name || prop,
+        in: options?.in,
         ARemarks: undefined,
         BRemarks: "missing",
       });
-    } else if (compareValue && A[prop] !== B[prop]) {
+    } else if (
+      typeof A[prop] !== "object" &&
+      typeof B[prop] !== "object" &&
+      A[prop] !== B[prop]
+    ) {
       diff.push({
         schemaType: schemaType,
-        name: name || prop,
+        name: options?.name || prop,
+        in: options?.in,
         ARemarks: "mismatch",
         BRemarks: "mismatch",
       });
@@ -228,8 +238,7 @@ export abstract class Diff {
     const [missingTable, allTables] = compareSchemaObjects(
       "table",
       this.schema.tables,
-      other.schema.tables,
-      false
+      other.schema.tables
     );
     diff.push(...missingTable);
 
@@ -238,8 +247,7 @@ export abstract class Diff {
         "table",
         this.schema.tables[table].columns,
         this.schema.tables[table].columns,
-        false,
-        table
+        { name: table }
       );
       if (missingColumns.length) {
         diff.push(...missingColumns);
@@ -251,8 +259,7 @@ export abstract class Diff {
           "table",
           this.schema.tables[table].columns[column],
           other.schema.tables[table].columns[column],
-          true,
-          table
+          { name: table }
         );
         if (mismatchedColumns.length) {
           diff.push(...mismatchedColumns);
@@ -284,7 +291,7 @@ export abstract class Diff {
         "index",
         this.schema.indexes[table],
         other.schema.indexes[table],
-        false
+        { in: table }
       );
       if (missingIndexes.length) {
         diff.push(...missingIndexes);
@@ -296,8 +303,7 @@ export abstract class Diff {
           "index",
           this.schema.indexes[table][key_name],
           other.schema.indexes[table][key_name],
-          false,
-          key_name
+          { name: key_name, in: table }
         );
         if (missingColumns.length) {
           diff.push(...missingColumns);
@@ -309,8 +315,7 @@ export abstract class Diff {
             "index",
             this.schema.indexes[table][key_name][column],
             other.schema.indexes[table][key_name][column],
-            true,
-            key_name
+            { name: key_name, in: table }
           );
           if (mismatchedColumns.length) {
             diff.push(...mismatchedColumns);
