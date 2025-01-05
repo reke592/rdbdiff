@@ -28,7 +28,6 @@ export type ColumnInfo = {
   type: string;
   default: string | null;
   nullable: string;
-  key: string;
   charMaxLength: number | null;
   ordinalPosition: number;
 };
@@ -40,7 +39,12 @@ export type IndexInfo = {
   sequence_no: number;
 };
 
-export type SchemaType = "table" | "index" | "procedure" | "function";
+export type SchemaType =
+  | "table"
+  | "column"
+  | "index"
+  | "procedure"
+  | "function";
 
 export type ComparisonRemarks = "missing" | "mismatch";
 
@@ -68,37 +72,55 @@ export type ConnectionOptions = {
  * @param A record
  * @param B record
  * @param compareValue flag to compare value
- * @param name static name for comparison, e.g. when comparing table columns, we need the table name instead of the property name being tested.
+ * @param options e.g. when comparing table columns, we need the table name instead of the property name being tested.
  * @returns [ diff, nodiffKeys ]
  */
 export function compareSchemaObjects(
   schemaType: SchemaType,
-  A: Record<any, any>,
-  B: Record<any, any>,
+  _A: Record<any, any>,
+  _B: Record<any, any>,
   options?: {
+    /**
+     * the owner of schema object.
+     *
+     * e.g. the name of table when checking a table columns or indexes
+     */
     in?: string;
+    /**
+     * the name of schema object.
+     *
+     * e.g. a table | index | stored_procedure | function name
+     */
     name?: string;
+    /**
+     * static remarks to use
+     *
+     * e.g. index name 'ix' exist in A.table and B.table but refereces different column
+     */
+    remarks?: ComparisonRemarks;
   }
 ): [diff: Comparison[], nodiffKeys: Set<string>] {
   const diff: Comparison[] = [];
   const nodiffKeys = new Set<string>();
-  const allProps = new Set([...Object.keys(A || {}), ...Object.keys(B || {})]);
+  const A = _A || {};
+  const B = _B || {};
+  const allProps = new Set([...Object.keys(A), ...Object.keys(B)]);
   for (let prop of allProps) {
     if (A[prop] === undefined) {
       diff.push({
         schemaType: schemaType,
         name: options?.name || prop,
         in: options?.in,
-        A: "missing",
-        B: undefined,
+        A: options?.remarks || "missing",
+        B: options?.remarks || undefined,
       });
     } else if (B[prop] === undefined) {
       diff.push({
         schemaType: schemaType,
         name: options?.name || prop,
         in: options?.in,
-        A: undefined,
-        B: "missing",
+        A: options?.remarks || undefined,
+        B: options?.remarks || "missing",
       });
     } else if (
       typeof A[prop] !== "object" &&
@@ -112,11 +134,17 @@ export function compareSchemaObjects(
         A: "mismatch",
         B: "mismatch",
       });
-      break;
     } else {
       nodiffKeys.add(prop);
     }
+    // options.name is given when checking for components of a schema object. e.g. table.columns
+    // stop checking the other properties once we determined the difference between schema object A and B.
+    // to avoid duplicate comparison results
+    if (options?.name && diff.length) {
+      break;
+    }
   }
+
   return [diff, nodiffKeys];
 }
 
@@ -244,10 +272,10 @@ export abstract class Diff {
 
     for (let table of allTables) {
       const [missingColumns, allColumns] = compareSchemaObjects(
-        "table",
+        "column",
         this.schema.tables[table].columns,
         this.schema.tables[table].columns,
-        { name: table }
+        { in: table }
       );
       if (missingColumns.length) {
         diff.push(...missingColumns);
@@ -256,10 +284,10 @@ export abstract class Diff {
 
       for (let column of allColumns) {
         const [mismatchedColumns, _] = compareSchemaObjects(
-          "table",
+          "column",
           this.schema.tables[table].columns[column],
           other.schema.tables[table].columns[column],
-          { name: table }
+          { name: column, in: table }
         );
         if (mismatchedColumns.length) {
           diff.push(...mismatchedColumns);
@@ -303,7 +331,7 @@ export abstract class Diff {
           "index",
           this.schema.indexes[table][key_name],
           other.schema.indexes[table][key_name],
-          { name: key_name, in: table }
+          { name: key_name, in: table, remarks: "mismatch" }
         );
         if (missingColumns.length) {
           diff.push(...missingColumns);
@@ -315,7 +343,7 @@ export abstract class Diff {
             "index",
             this.schema.indexes[table][key_name][column],
             other.schema.indexes[table][key_name][column],
-            { name: key_name, in: table }
+            { name: key_name, in: table, remarks: "mismatch" }
           );
           if (mismatchedColumns.length) {
             diff.push(...mismatchedColumns);

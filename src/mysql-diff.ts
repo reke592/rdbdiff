@@ -36,7 +36,6 @@ export class MySqlDiff extends Diff {
         COLUMN_TYPE,
         COLUMN_DEFAULT,
         IS_NULLABLE,
-        COLUMN_KEY,
         CHARACTER_MAXIMUM_LENGTH,
         ORDINAL_POSITION
       FROM information_schema.columns
@@ -52,14 +51,13 @@ export class MySqlDiff extends Diff {
       type: row.COLUMN_TYPE,
       default: row.COLUMN_DEFAULT,
       nullable: row.IS_NULLABLE,
-      key: row.COLUMN_KEY,
       charMaxLength: row.CHARACTER_MAXIMUM_LENGTH,
       ordinalPosition: row.ORDINAL_POSITION,
     }));
   }
 
   async getIndexes(tableName: string): Promise<IndexInfo[]> {
-    let results = await this.raw(`SHOW INDEX FROM ${tableName}`);
+    let results = await this.raw(`SHOW INDEX FROM ${this.dbname}.${tableName}`);
     return results.map((row) => ({
       key_name: row.Key_name,
       isUnique: row.Mon_unique ? true : false,
