@@ -1,29 +1,14 @@
 services:
-  # db1
-  mysql1:
+  mysql:
     image: mysql:8.0.40
     environment:
       - MYSQL_DATABASE=dev
       - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql-root
     command: --default-authentication-plugin=mysql_native_password
     ports:
-      - 33061:3306
+      - 3306:3306
     expose:
-      - 33061
+      - 3306
     volumes:
       - ./.secrets/mysql-root:/run/secrets/mysql-root
-      - ./.container/mysql1:/var/lib/mysql
-  # db2
-  mysql2:
-    image: mysql:8.0.40
-    environment:
-      - MYSQL_DATABASE=dev
-      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/mysql-root
-    command: --default-authentication-plugin=mysql_native_password
-    ports:
-      - 33062:3306
-    expose:
-      - 33061
-    volumes:
-      - ./.secrets/mysql-root:/run/secrets/mysql-root
-      - ./.container/mysql2:/var/lib/mysql
+      - ./.container/mysql:/var/lib/mysql
