@@ -1,2 +1,3 @@
 #!/usr/bin/env node
-require("../lib/cli");
+const { program } = require("../lib/cli");
+program.parse(process.argv);

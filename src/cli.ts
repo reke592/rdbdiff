@@ -1,8 +1,9 @@
 import { Command } from "commander";
 import { MySqlDiff } from "./mysql-diff";
 import { Diff, ConnectionOptions, ComparisonOptions } from "./diff";
-import { basename } from "path";
+import { basename, dirname } from "path";
 import { URL } from "url";
+import { existsSync, mkdirSync, writeFileSync } from "fs";
 
 type DiffOptions = Omit<ConnectionOptions, "client">;
 
@@ -36,6 +37,9 @@ program
   .command("compare <dbURL1> <dbURL2>")
   .option("-e", "eager check all errors in schema object")
   .option("-v", "show console logs regarding database connection activity")
+  .option("-o <filename>", "output")
+  .option("-p", "pretty output")
+  .option("-a", "include A, B schema in output")
   .description(
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
@@ -50,6 +54,9 @@ program
     const args = this.args;
     const eager = opts["e"] || false;
     const verbose = opts["v"] || false;
+    const outfile = opts["o"] || undefined;
+    const pretty = opts["p"] || false;
+    const all = opts["a"] || false;
     const [dbUrl1, dbUrl2] = args;
     const url1 = URL.parse(dbUrl1);
     const url2 = URL.parse(dbUrl2);
@@ -63,7 +70,20 @@ program
     const A = createConnection(url1, { eager, verbose });
     const B = createConnection(url2, { eager, verbose });
     await Promise.all([A.load(), B.load()]);
-    console.log(A.compare(B));
+    const output = {
+      result: A.compare(B),
+      ...(all ? { A, B } : {}),
+    };
+    if (outfile) {
+      if (!existsSync(dirname(outfile))) {
+        mkdirSync(dirname(outfile), { recursive: true });
+      }
+      writeFileSync(outfile, JSON.stringify(output, null, pretty ? 2 : 0));
+    } else {
+      console.log(output);
+    }
   });
 
-program.parse(process.argv);
+module.exports = {
+  program,
+};
