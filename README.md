@@ -12,8 +12,16 @@ A tool to compare database schema.
 
 ### Usage
 
+Compare Database
+
 ```sh
 rdbdiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port/dbname
+```
+
+Display Help
+
+```sh
+rmdiff help compare
 ```
 
 #### 📋 **Dev Environment**
@@ -28,7 +36,6 @@ Rebuild and Link the Package CLI
 
 ```sh
 npm i
-npm run build
 npm run test
 npm link .
 ```
