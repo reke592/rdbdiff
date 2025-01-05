@@ -64,6 +64,14 @@ export type ConnectionOptions = {
   port?: number;
   user?: string;
   password?: string;
+  options: ComparisonOptions;
+};
+
+export type ComparisonOptions = {
+  /**
+   * check all errors in schema object
+   */
+  eager: boolean;
 };
 
 /**
@@ -151,6 +159,7 @@ export function compareSchemaObjects(
 export abstract class Diff {
   private _connection: Knex;
   private _label: string;
+  private comparisonOptions: ComparisonOptions;
 
   protected schema: InformationSchema = {
     tables: {},
@@ -161,6 +170,7 @@ export abstract class Diff {
 
   constructor(options: ConnectionOptions) {
     let { host, port, database } = options;
+    this.comparisonOptions = options.options;
     this._label = `${host}${port ? `_${port}` : ""}_${database}`;
     this.dbname = options.database;
     this._connection = knex({
@@ -279,7 +289,9 @@ export abstract class Diff {
       );
       if (missingColumns.length) {
         diff.push(...missingColumns);
-        continue;
+        if (!this.comparisonOptions.eager) {
+          continue;
+        }
       }
 
       for (let column of allColumns) {
@@ -291,7 +303,9 @@ export abstract class Diff {
         );
         if (mismatchedColumns.length) {
           diff.push(...mismatchedColumns);
-          break;
+          if (!this.comparisonOptions.eager) {
+            break;
+          }
         }
       }
     }

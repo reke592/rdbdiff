@@ -30,6 +30,18 @@ CREATE TABLE IF NOT EXISTS B.`scenario_mismatch_column_type` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
   `column_exist` INT DEFAULT 0
 );
+-- missing and mismatch columns
+CREATE TABLE IF NOT EXISTS A.`scenario_missing_mismatch_columns` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `column1` INT DEFAULT 1,
+  `column2` INT DEFAULT 1,
+  `column3` INT DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS B.`scenario_missing_mismatch_columns` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `column1` INT DEFAULT 1,
+  `column2` INT DEFAULT 0
+);
 -- missing index
 CREATE TABLE IF NOT EXISTS A.`scenario_missing_index` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
@@ -68,6 +80,21 @@ CREATE TABLE IF NOT EXISTS B.`scenario_mismatch_index_sequence` (
 );
 CREATE UNIQUE INDEX ux ON A.scenario_mismatch_index_sequence(`column1`, `column2`);
 CREATE UNIQUE INDEX ux ON B.scenario_mismatch_index_sequence(`column2`, `column1`);
+-- missing index column with mismatch in sequence
+CREATE TABLE IF NOT EXISTS A.`scenario_missing_index_column_mismatch_sequence` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `column1` INT DEFAULT 1,
+  `column2` INT DEFAULT 1,
+  `column3` INT DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS B.`scenario_missing_index_column_mismatch_sequence` (
+  `id` INT PRIMARY KEY AUTO_INCREMENT,
+  `column1` INT DEFAULT 1,
+  `column2` INT DEFAULT 1,
+  `column3` INT DEFAULT 1
+);
+CREATE UNIQUE INDEX ux ON A.scenario_missing_index_column_mismatch_sequence(`column1`, `column2`, `column3`);
+CREATE UNIQUE INDEX ux ON B.scenario_missing_index_column_mismatch_sequence(`column2`, `column1`);
 -- missing stored procedure
 DELIMITER |
 CREATE PROCEDURE A.sp_missing(p_0 INT)

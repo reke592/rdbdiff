@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { MySqlDiff } from "./mysql-diff";
-import { Diff, ConnectionOptions } from "./diff";
+import { Diff, ConnectionOptions, ComparisonOptions } from "./diff";
 import { basename } from "path";
 import { URL } from "url";
 
@@ -14,7 +14,7 @@ const supported: Record<string, (options: DiffOptions) => Diff> = {
     }),
 };
 
-function createConnection(url: URL): Diff {
+function createConnection(url: URL, options: ComparisonOptions): Diff {
   if (!supported[url.protocol]) {
     throw new Error(
       `${url.protocol} not supported. protocols ${Object.keys(supported)}`
@@ -26,6 +26,7 @@ function createConnection(url: URL): Diff {
     port: Number(url.port) || undefined,
     user: url.username,
     password: url.password,
+    options,
   });
 }
 
@@ -33,6 +34,7 @@ const program = new Command();
 
 program
   .command("compare <dbURL1> <dbURL2>")
+  .option("-e", "eager check all errors in schema object")
   .description(
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
@@ -42,7 +44,10 @@ program
     `
   )
   .summary("Check the difference between database schemas.")
-  .action(async (...args) => {
+  .action(async function () {
+    const opts = this.opts();
+    const args = this.args;
+    const eager = opts["e"] || false;
     const [dbUrl1, dbUrl2] = args;
     const url1 = URL.parse(dbUrl1);
     const url2 = URL.parse(dbUrl2);
@@ -53,8 +58,9 @@ program
         `protocol mismatch: ${url1.protocol} != ${url2.protocol}`
       );
     }
-    const A = createConnection(url1);
-    const B = createConnection(url2);
+    console.log(program.opts());
+    const A = createConnection(url1, { eager });
+    const B = createConnection(url2, { eager });
     await Promise.all([A.load(), B.load()]);
     console.log(A.compare(B));
   });

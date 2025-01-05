@@ -16,6 +16,7 @@
   "scripts": {
     "test": "node . compare mysql://root:dev@localhost:3306/A mysql://root:dev@localhost:3306/B",
     "dev": "ts-node ./src/cli.ts compare mysql://root:dev@localhost:3306/A mysql://root:dev@localhost:3306/B",
+    "dev:eager": "ts-node ./src/cli.ts compare -e mysql://root:dev@localhost:3306/A mysql://root:dev@localhost:3306/B",
     "clean": "rimraf ./lib",
     "build": "npm run clean && tsc",
     "prepublishOnly": "npm run build"
