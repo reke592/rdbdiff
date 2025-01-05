@@ -48,8 +48,8 @@ export type Comparison = {
   schemaType: SchemaType;
   name: string;
   in?: string;
-  ARemarks?: ComparisonRemarks;
-  BRemarks?: ComparisonRemarks;
+  A?: ComparisonRemarks;
+  B?: ComparisonRemarks;
 };
 
 export type ConnectionOptions = {
@@ -89,16 +89,16 @@ export function compareSchemaObjects(
         schemaType: schemaType,
         name: options?.name || prop,
         in: options?.in,
-        ARemarks: "missing",
-        BRemarks: undefined,
+        A: "missing",
+        B: undefined,
       });
     } else if (B[prop] === undefined) {
       diff.push({
         schemaType: schemaType,
         name: options?.name || prop,
         in: options?.in,
-        ARemarks: undefined,
-        BRemarks: "missing",
+        A: undefined,
+        B: "missing",
       });
     } else if (
       typeof A[prop] !== "object" &&
@@ -109,8 +109,8 @@ export function compareSchemaObjects(
         schemaType: schemaType,
         name: options?.name || prop,
         in: options?.in,
-        ARemarks: "mismatch",
-        BRemarks: "mismatch",
+        A: "mismatch",
+        B: "mismatch",
       });
       break;
     } else {
