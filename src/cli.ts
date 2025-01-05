@@ -72,7 +72,7 @@ program
     await Promise.all([A.load(), B.load()]);
     const output = {
       result: A.compare(B),
-      ...(all ? { A, B } : {}),
+      ...(all ? { A: A.asRecord(), B: B.asRecord() } : {}),
     };
     if (outfile) {
       if (!existsSync(dirname(outfile))) {
@@ -80,7 +80,7 @@ program
       }
       writeFileSync(outfile, JSON.stringify(output, null, pretty ? 2 : 0));
     } else {
-      console.log(output);
+      console.log(JSON.stringify(output, null, pretty ? 2 : 0));
     }
   });
 

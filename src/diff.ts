@@ -256,10 +256,8 @@ export abstract class Diff {
     return this.schema;
   }
 
-  json(pretty: boolean = true) {
-    return pretty
-      ? JSON.stringify({ label: this._label, schema: this.schema }, null, 2)
-      : JSON.stringify({ label: this._label, schema: this.schema });
+  asRecord() {
+    return { label: this._label, schema: this.schema };
   }
 
   /**
