@@ -72,6 +72,10 @@ export type ComparisonOptions = {
    * check all errors in schema object
    */
   eager: boolean;
+  /**
+   * logs connection activity
+   */
+  verbose: boolean;
 };
 
 /**
@@ -199,7 +203,9 @@ export abstract class Diff {
   }
 
   log(...message: any) {
-    console.log(this._label, ...message);
+    if (this.comparisonOptions.verbose) {
+      console.log(this._label, ...message);
+    }
   }
 
   /**

@@ -35,6 +35,7 @@ const program = new Command();
 program
   .command("compare <dbURL1> <dbURL2>")
   .option("-e", "eager check all errors in schema object")
+  .option("-v", "show console logs regarding database connection activity")
   .description(
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
@@ -48,6 +49,7 @@ program
     const opts = this.opts();
     const args = this.args;
     const eager = opts["e"] || false;
+    const verbose = opts["v"] || false;
     const [dbUrl1, dbUrl2] = args;
     const url1 = URL.parse(dbUrl1);
     const url2 = URL.parse(dbUrl2);
@@ -58,9 +60,8 @@ program
         `protocol mismatch: ${url1.protocol} != ${url2.protocol}`
       );
     }
-    console.log(program.opts());
-    const A = createConnection(url1, { eager });
-    const B = createConnection(url2, { eager });
+    const A = createConnection(url1, { eager, verbose });
+    const B = createConnection(url2, { eager, verbose });
     await Promise.all([A.load(), B.load()]);
     console.log(A.compare(B));
   });
