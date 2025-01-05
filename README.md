@@ -21,7 +21,7 @@ rdbdiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port
 Display Help
 
 ```sh
-rmdiff help compare
+rdbdiff help compare
 ```
 
 #### 📋 **Dev Environment**
