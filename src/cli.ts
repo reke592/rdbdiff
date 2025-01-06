@@ -94,6 +94,10 @@ program
       console.log(JSON.stringify(output, null, pretty ? 2 : 0));
     }
 
+    if (process.env.NODE_ENV === "test") {
+      return;
+    }
+
     // exit code
     if (diff.length) {
       console.error(

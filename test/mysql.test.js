@@ -1,4 +1,3 @@
-
 const { program } = require("../lib/cli");
 const { awaiter } = require("./common");
 
