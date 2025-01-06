@@ -43,5 +43,5 @@ npm link .
 Unlink the Project
 
 ```sh
-npm unlink -g @reke592/sqldiff -g
+npm unlink -g @reke592/sqldiff
 ```
