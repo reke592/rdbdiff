@@ -73,19 +73,18 @@ export type ProcedureParamInfo = {
   mode: "in" | "out" | Omit<string, "in" | "out">;
 };
 
-export type ProblemType =
+export type ObjectType =
   | "table"
   | "column"
   | "index"
   | "procedure"
   | "function"
-  | "parameter"
-  | "definition";
+  | "parameter";
 
 export type ComparisonRemarks = "exist" | "missing" | "mismatch";
 
 export type Comparison = {
-  problem: ProblemType;
+  objectType: ObjectType;
   name: string;
   in?: string;
   A?: ComparisonRemarks;
@@ -120,7 +119,7 @@ export type ComparisonOptions = {
 
 /**
  * compare schema properties
- * @param problem
+ * @param objectType
  * @param A record
  * @param B record
  * @param compareValue flag to compare value
@@ -128,7 +127,7 @@ export type ComparisonOptions = {
  * @returns [ diff, nodiffKeys ]
  */
 export function compareSchemaObjects(
-  problem: ProblemType,
+  objectType: ObjectType,
   _A: Record<any, any>,
   _B: Record<any, any>,
   options?: {
@@ -172,7 +171,7 @@ export function compareSchemaObjects(
         : B[prop];
     if (valueA === undefined) {
       diff.push({
-        problem: problem,
+        objectType: objectType,
         name: options?.name || prop,
         in: options?.in,
         A: options?.remarks || "missing",
@@ -180,7 +179,7 @@ export function compareSchemaObjects(
       });
     } else if (valueB === undefined) {
       diff.push({
-        problem: problem,
+        objectType: objectType,
         name: options?.name || prop,
         in: options?.in,
         A: options?.remarks || "exist",
@@ -192,7 +191,7 @@ export function compareSchemaObjects(
       valueA !== valueB
     ) {
       diff.push({
-        problem: problem,
+        objectType: objectType,
         name: options?.name || prop,
         in: options?.in,
         A: "mismatch",
@@ -467,11 +466,12 @@ export abstract class Diff {
 
       // compare body
       const [mistmatchBody, _] = compareSchemaObjects(
-        "definition",
+        "procedure",
         thisProc,
         otherProc,
         {
-          in: procName,
+          name: procName,
+          in: "definition",
           whitespaces: this.comparisonOptions.whitespaces,
         }
       );
