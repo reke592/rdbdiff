@@ -41,6 +41,7 @@ program
   .option("-t", "console.table if comparison issues were found.")
   .option("-p", "pretty output")
   .option("-a", "include A, B schema in output")
+  .option("-w", "check whitespace in function and procedure definitions")
   .description(
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
@@ -59,6 +60,7 @@ program
     const outTable = opts["t"] || false;
     const pretty = opts["p"] || false;
     const all = opts["a"] || false;
+    const whitespaces = opts["w"] || false;
     const [dbUrl1, dbUrl2] = args;
     const url1 = URL.parse(dbUrl1);
     const url2 = URL.parse(dbUrl2);
@@ -69,8 +71,8 @@ program
         `protocol mismatch: ${url1.protocol} != ${url2.protocol}`
       );
     }
-    const A = createConnection(url1, { eager, verbose });
-    const B = createConnection(url2, { eager, verbose });
+    const A = createConnection(url1, { eager, verbose, whitespaces });
+    const B = createConnection(url2, { eager, verbose, whitespaces });
 
     // process
     console.log("checking database schema. please wait..");
