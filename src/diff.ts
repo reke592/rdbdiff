@@ -73,7 +73,7 @@ export type ProcedureParamInfo = {
   mode: "in" | "out" | Omit<string, "in" | "out">;
 };
 
-export type SchemaType =
+export type ProblemType =
   | "table"
   | "column"
   | "index"
@@ -85,7 +85,7 @@ export type SchemaType =
 export type ComparisonRemarks = "exist" | "missing" | "mismatch";
 
 export type Comparison = {
-  schemaType: SchemaType;
+  problem: ProblemType;
   name: string;
   in?: string;
   A?: ComparisonRemarks;
@@ -120,7 +120,7 @@ export type ComparisonOptions = {
 
 /**
  * compare schema properties
- * @param schemaType
+ * @param problem
  * @param A record
  * @param B record
  * @param compareValue flag to compare value
@@ -128,7 +128,7 @@ export type ComparisonOptions = {
  * @returns [ diff, nodiffKeys ]
  */
 export function compareSchemaObjects(
-  schemaType: SchemaType,
+  problem: ProblemType,
   _A: Record<any, any>,
   _B: Record<any, any>,
   options?: {
@@ -172,7 +172,7 @@ export function compareSchemaObjects(
         : B[prop];
     if (valueA === undefined) {
       diff.push({
-        schemaType: schemaType,
+        problem: problem,
         name: options?.name || prop,
         in: options?.in,
         A: options?.remarks || "missing",
@@ -180,7 +180,7 @@ export function compareSchemaObjects(
       });
     } else if (valueB === undefined) {
       diff.push({
-        schemaType: schemaType,
+        problem: problem,
         name: options?.name || prop,
         in: options?.in,
         A: options?.remarks || "exist",
@@ -192,7 +192,7 @@ export function compareSchemaObjects(
       valueA !== valueB
     ) {
       diff.push({
-        schemaType: schemaType,
+        problem: problem,
         name: options?.name || prop,
         in: options?.in,
         A: "mismatch",

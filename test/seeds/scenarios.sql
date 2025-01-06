@@ -96,37 +96,72 @@ CREATE TABLE IF NOT EXISTS B.`scenario_missing_index_column_mismatch_sequence` (
 CREATE UNIQUE INDEX ux ON A.scenario_missing_index_column_mismatch_sequence(`column1`, `column2`, `column3`);
 CREATE UNIQUE INDEX ux ON B.scenario_missing_index_column_mismatch_sequence(`column2`, `column1`);
 -- missing stored procedure
-DELIMITER |
+DELIMITER $$
 CREATE PROCEDURE A.sp_missing(p_0 INT)
 BEGIN
 	SELECT p_0 AS `result`;
 END;
-|
-DELIMITER ;
+$$
 -- mismatch stored procedure parameters
-DELIMITER |
 CREATE PROCEDURE A.sp_mismatch_params(p_0 INT)
 BEGIN
 	SELECT p_0 AS `result`;
 END;
-|
+$$
 CREATE PROCEDURE B.sp_mismatch_params(p_0 VARCHAR(50))
 BEGIN
 	SELECT p_0 AS `result`;
 END;
-|
-DELIMITER ;
+$$
 -- stored procedure whitespaces
-DELIMITER |
 CREATE PROCEDURE A.sp_whitespaces(p_0 INT)
 BEGIN
 	SELECT p_0 AS `result`;
 END;
-|
+$$
 CREATE PROCEDURE B.sp_whitespaces(p_0 INT)
 BEGIN
 	  SELECT p_0 
     AS `result`;
 END;
-|
+$$
+-- missing function
+CREATE FUNCTION A.fn_missing(p_0 INT)
+RETURNS DATE
+DETERMINISTIC
+BEGIN
+    RETURN 1;
+END;
+$$
+-- mismatch function parameters and definition
+CREATE FUNCTION A.fn_mismatch_params(p_0 DATETIME)
+RETURNS DATETIME
+NOT DETERMINISTIC
+READS SQL DATA
+BEGIN
+    RETURN NOW();
+END;
+$$
+CREATE FUNCTION B.fn_mismatch_params(p_0 INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    RETURN 1;
+END;
+$$
+-- function whitespaces
+CREATE FUNCTION A.fn_whitespaces(p_0 INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+    RETURN 1;
+END;
+$$
+CREATE FUNCTION B.fn_whitespaces(p_0 INT)
+RETURNS INT
+DETERMINISTIC
+BEGIN
+      RETURN 1;
+END;
+$$
 DELIMITER ;
