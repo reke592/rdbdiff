@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS A.`scenario_missing_table` (
 -- missing column
 CREATE TABLE IF NOT EXISTS A.`scenario_missing_column` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `column_exist` INT DEFAULT 1
+  `column1` INT DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS B.`scenario_missing_column` (
   `id` INT PRIMARY KEY AUTO_INCREMENT
@@ -24,11 +24,11 @@ CREATE TABLE IF NOT EXISTS B.`scenario_missing_column` (
 -- mismatch column
 CREATE TABLE IF NOT EXISTS A.`scenario_mismatch_column_type` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `column_exist` INT DEFAULT 1
+  `column1` INT DEFAULT 1
 );
 CREATE TABLE IF NOT EXISTS B.`scenario_mismatch_column_type` (
   `id` INT PRIMARY KEY AUTO_INCREMENT,
-  `column_exist` INT DEFAULT 0
+  `column1` INT DEFAULT 0
 );
 -- missing and mismatch columns
 CREATE TABLE IF NOT EXISTS A.`scenario_missing_mismatch_columns` (
