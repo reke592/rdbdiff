@@ -1,9 +1,9 @@
 {
-  "name": "@reke592/rdbdiff",
+  "name": "@reke592/sqldiff",
   "version": "0.0.0",
   "description": "Relational DB schema diff",
   "bin": {
-    "rdbdiff": "./bin/rdbdiff.js"
+    "sqldiff": "./bin/sqldiff.js"
   },
   "keywords": [
     "database",

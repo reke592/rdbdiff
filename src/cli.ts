@@ -37,7 +37,7 @@ program
   .command("compare <dbURL1> <dbURL2>")
   .option("-e", "eager check all errors in schema object")
   .option("-v", "show console logs regarding database connection activity")
-  .option("-o <filename>", "output")
+  .option("-o <filename>", "output", "sqldiff.out.json")
   .option("-t", "console.table if comparison issues were found.")
   .option("-p", "pretty output")
   .option("-a", "include A, B schema in output")

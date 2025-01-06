@@ -1,4 +1,4 @@
-### RDBDiff
+### SQLDiff
 
 A tool to compare database schema.
 
@@ -15,13 +15,13 @@ A tool to compare database schema.
 Compare Database
 
 ```sh
-rdbdiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port/dbname
+sqldiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port/dbname
 ```
 
 Display Help
 
 ```sh
-rdbdiff help compare
+sqldiff help compare
 ```
 
 #### 📋 **Dev Environment**
@@ -43,5 +43,5 @@ npm link .
 Unlink the Project
 
 ```sh
-npm unlink @reke592/rdbdiff -g
+npm unlink -g @reke592/sqldiff -g
 ```
