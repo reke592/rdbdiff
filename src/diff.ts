@@ -16,6 +16,12 @@ export type InformationSchema = {
       };
     };
   };
+  summary: {
+    [tableName: string]: {
+      columns: number;
+      indexes: number;
+    };
+  };
 };
 
 export type TableInfo = {
@@ -168,6 +174,7 @@ export abstract class Diff {
   protected schema: InformationSchema = {
     tables: {},
     indexes: {},
+    summary: {},
   };
 
   protected dbname: string;
@@ -216,6 +223,7 @@ export abstract class Diff {
     this.schema = {
       tables: {},
       indexes: {},
+      summary: {},
     };
 
     this.log("checking schema..");
@@ -244,10 +252,14 @@ export abstract class Diff {
         columns: columns,
       };
       this.schema.indexes[table.name] = indexes;
+      this.schema.summary[table.name] = {
+        columns: Object.keys(columns).length,
+        indexes: Object.keys(indexes).length,
+      };
       this.log(
         `'${table.name}'`,
-        `columns: ${Object.keys(columns).length}`,
-        `index: ${Object.keys(indexes).length}`
+        `columns: ${this.schema.summary[table.name].columns}`,
+        `index: ${this.schema.summary[table.name].indexes}`
       );
     }
 

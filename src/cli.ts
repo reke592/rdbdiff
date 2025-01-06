@@ -1,7 +1,7 @@
 import { Command } from "commander";
 import { MySqlDiff } from "./mysql-diff";
 import { Diff, ConnectionOptions, ComparisonOptions } from "./diff";
-import { basename, dirname } from "path";
+import { basename, dirname, resolve } from "path";
 import { URL } from "url";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
 
@@ -38,6 +38,7 @@ program
   .option("-e", "eager check all errors in schema object")
   .option("-v", "show console logs regarding database connection activity")
   .option("-o <filename>", "output")
+  .option("-t", "console.table if comparison issues were found.")
   .option("-p", "pretty output")
   .option("-a", "include A, B schema in output")
   .description(
@@ -55,6 +56,7 @@ program
     const eager = opts["e"] || false;
     const verbose = opts["v"] || false;
     const outfile = opts["o"] || undefined;
+    const outTable = opts["t"] || false;
     const pretty = opts["p"] || false;
     const all = opts["a"] || false;
     const [dbUrl1, dbUrl2] = args;
@@ -69,18 +71,40 @@ program
     }
     const A = createConnection(url1, { eager, verbose });
     const B = createConnection(url2, { eager, verbose });
+
+    // process
+    console.log("checking database schema. please wait..");
     await Promise.all([A.load(), B.load()]);
+    const diff = A.compare(B);
+    const ARecord = A.asRecord();
+    const BRecord = B.asRecord();
     const output = {
-      result: A.compare(B),
-      ...(all ? { A: A.asRecord(), B: B.asRecord() } : {}),
+      result: diff,
+      ...(all ? { A: ARecord, B: BRecord } : {}),
     };
+
+    // output
     if (outfile) {
       if (!existsSync(dirname(outfile))) {
         mkdirSync(dirname(outfile), { recursive: true });
       }
+      console.log(`writing output to ${resolve(outfile)}`);
       writeFileSync(outfile, JSON.stringify(output, null, pretty ? 2 : 0));
     } else {
       console.log(JSON.stringify(output, null, pretty ? 2 : 0));
+    }
+
+    // exit code
+    if (diff.length) {
+      console.error(
+        `${diff.length} comparison issues were found between ${ARecord.label} and ${BRecord.label}.`
+      );
+      if (outTable) {
+        console.table(diff);
+      }
+      process.exit(1);
+    } else {
+      process.exit(0);
     }
   });
 
