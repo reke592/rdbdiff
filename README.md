@@ -1,14 +1,24 @@
-### SQLDiff
+### SQLDiff Schema
 
-A tool to compare database schema.
+A tool to compare database schema. Exit code 1 if the schema does not match.
+
+**Sample Use Case:** To fail a pipeline.
 
 #### 📋 **TODO: Comparison Features to Implement**
 
 - MySql
+
   - ✅ Tables
   - ✅ Indexes
   - ✅ Stored Procedures
-  - ⬛ Functions
+  - ✅ Functions
+
+#### 📋 **TODO: CLI Output to Implement**
+
+- CLI Output
+  - ✅ Console.table
+  - ✅ Show Create
+  - ⬛ Show Fix
 
 ### Usage
 
@@ -22,6 +32,19 @@ Display Help
 
 ```sh
 sqldiff help compare
+```
+
+### Running As Docker Container
+
+```sh
+# build the image
+docker build . -t sqldiff
+
+# run the container
+docker run --rm sqldiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port/dbname
+
+# save console logs to a file
+docker run --rm sqldiff compare mysql://user:pass@host1:port/dbname mysql://user:pass@host2:port/dbname > out.log 2>&1
 ```
 
 #### 📋 **Dev Environment**
