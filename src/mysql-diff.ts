@@ -1,19 +1,12 @@
-import {
-  ColumnInfo,
-  ConnectionOptions,
-  Diff,
-  IndexInfo,
-  ProcedureInfo,
-  ProcedureParamInfo,
-  TableInfo,
-} from "./diff";
+import { ConnectionOptions, Diff, ObjectType } from "./diff";
+import { titleCase } from "./utils";
 
 export class MySqlDiff extends Diff {
   constructor(options: ConnectionOptions) {
     super(options);
   }
 
-  async getTables(): Promise<TableInfo[]> {
+  async getTables(): Promise<Record<string, any>[]> {
     let results = await this.raw(
       `
       SELECT 
@@ -30,7 +23,7 @@ export class MySqlDiff extends Diff {
     }));
   }
 
-  async getColumns(tableName: string): Promise<ColumnInfo[]> {
+  async getColumns(tableName: string): Promise<Record<string, any>[]> {
     let results = await this.raw(
       `
       SELECT 
@@ -58,7 +51,7 @@ export class MySqlDiff extends Diff {
     }));
   }
 
-  async getIndexes(tableName: string): Promise<IndexInfo[]> {
+  async getIndexes(tableName: string): Promise<Record<string, any>[]> {
     let results = await this.raw(`SHOW INDEX FROM ${this.dbname}.${tableName}`);
     return results.map((row) => ({
       key_name: row.Key_name,
@@ -68,7 +61,7 @@ export class MySqlDiff extends Diff {
     }));
   }
 
-  async getStoredProcedures(): Promise<ProcedureInfo[]> {
+  async getStoredProcedures(): Promise<Record<string, any>[]> {
     let results = await this.raw(
       `
       SELECT 
@@ -86,7 +79,7 @@ export class MySqlDiff extends Diff {
     }));
   }
 
-  async getStoredProcParams(spName: string): Promise<ProcedureParamInfo[]> {
+  async getStoredProcParams(spName: string): Promise<Record<string, any>[]> {
     let results = await this.raw(
       `
       SELECT 
@@ -108,5 +101,60 @@ export class MySqlDiff extends Diff {
       charMaxLength: row.CHARACTER_MAXIMUM_LENGTH,
       mode: row.PARAMETER_MODE,
     }));
+  }
+
+  async getFunctions(): Promise<Record<string, any>[]> {
+    let results = await this.raw(
+      `
+      SELECT 
+        ROUTINE_NAME, 
+        DATA_TYPE,
+        ROUTINE_DEFINITION
+      FROM information_schema.ROUTINES 
+      WHERE ROUTINE_SCHEMA = ?
+      AND ROUTINE_TYPE = 'FUNCTION'
+      `,
+      [this.dbname]
+    );
+    return results.map((row) => ({
+      name: row.ROUTINE_NAME,
+      type: row.DATA_TYPE,
+      definition: row.ROUTINE_DEFINITION,
+    }));
+  }
+
+  async getFunctionParams(fnName: string): Promise<Record<string, any>[]> {
+    let results = await this.raw(
+      `
+      SELECT 
+        PARAMETER_NAME,
+        ORDINAL_POSITION,
+        DATA_TYPE,
+        CHARACTER_MAXIMUM_LENGTH,
+        PARAMETER_MODE
+      FROM information_schema.PARAMETERS
+      WHERE SPECIFIC_SCHEMA = ?
+        AND SPECIFIC_NAME = ?
+        AND ORDINAL_POSITION > 0;
+      `,
+      [this.dbname, fnName]
+    );
+    return results.map((row) => ({
+      name: row.PARAMETER_NAME,
+      ordinal_position: row.ORDINAL_POSITION,
+      type: row.DATA_TYPE,
+      charMaxLength: row.CHARACTER_MAXIMUM_LENGTH,
+      mode: row.PARAMETER_MODE,
+    }));
+  }
+
+  async showCreate(type: string, name: string): Promise<string> {
+    let objectType = titleCase(type);
+    return await this.raw(`SHOW CREATE ${objectType} ${this.dbname}.${name}`)
+      .then((result) => result[0][`Create ${objectType}`])
+      .catch((err) => {
+        console.error(err.message);
+        return undefined;
+      });
   }
 }

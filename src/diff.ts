@@ -5,14 +5,14 @@ export type InformationSchema = {
     [tableName: string]: {
       engine: string;
       columns: {
-        [columnName: string]: ColumnInfo;
+        [columnName: string]: Record<string, any>;
       };
     };
   };
   indexes: {
     [tableName: string]: {
       [keyName: string]: {
-        [columnName: string]: IndexInfo;
+        [columnName: string]: Record<string, any>;
       };
     };
   };
@@ -20,7 +20,15 @@ export type InformationSchema = {
     [procName: string]: {
       definition: string;
       parameters: {
-        [paramName: string]: ProcedureParamInfo;
+        [paramName: string]: Record<string, any>;
+      };
+    };
+  };
+  functions: {
+    [procName: string]: {
+      definition: string;
+      parameters: {
+        [paramName: string]: Record<string, any>;
       };
     };
   };
@@ -36,50 +44,22 @@ export type InformationSchema = {
         parameters: number;
       };
     };
+    functions: {
+      [fnName: string]: {
+        parameters: number;
+      };
+    };
   };
-};
-
-export type TableInfo = {
-  name: string;
-  engine: string;
-};
-
-export type ColumnInfo = {
-  name: string;
-  type: string;
-  default: string | null;
-  nullable: string;
-  charMaxLength: number | null;
-  ordinalPosition: number;
-};
-
-export type IndexInfo = {
-  key_name: string;
-  isUnique: boolean;
-  column: string;
-  sequence_no: number;
-};
-
-export type ProcedureInfo = {
-  name: string;
-  definition: string;
-};
-
-export type ProcedureParamInfo = {
-  name: string;
-  ordinal_position: number;
-  type: string;
-  charMaxLength: number | null;
-  mode: "in" | "out" | Omit<string, "in" | "out">;
 };
 
 export type ObjectType =
   | "table"
-  | "column"
+  | "table.column"
   | "index"
   | "procedure"
+  | "procedure.parameter"
   | "function"
-  | "parameter";
+  | "function.parameter";
 
 export type ComparisonRemarks = "exist" | "missing" | "mismatch";
 
@@ -220,9 +200,11 @@ export abstract class Diff {
     tables: {},
     indexes: {},
     procedures: {},
+    functions: {},
     summary: {
       tables: {},
       procedures: {},
+      functions: {},
     },
   };
 
@@ -258,6 +240,11 @@ export abstract class Diff {
     return result;
   }
 
+  async disconnect(): Promise<void> {
+    this.log(`closing connection..`);
+    await this._connection.destroy();
+  }
+
   log(...message: any) {
     if (this.comparisonOptions.verbose) {
       console.log(this._label, ...message);
@@ -274,14 +261,14 @@ export abstract class Diff {
     this.log(`tables in ${this.dbname}: ${tables.length}`);
     for (let table of tables) {
       let columns = await this.getColumns(table.name).then((rows) =>
-        rows.reduce((data: Record<string, ColumnInfo>, row) => {
+        rows.reduce((data: Record<string, Record<string, any>>, row) => {
           data[row.name] = row;
           return data;
         }, {})
       );
       let indexes = await this.getIndexes(table.name).then((results) =>
         results.reduce(
-          (data: Record<string, Record<string, IndexInfo>>, row) => {
+          (data: Record<string, Record<string, Record<string, any>>>, row) => {
             data[row.key_name] = data[row.key_name] || {};
             data[row.key_name][row.column] = row;
             return data;
@@ -314,7 +301,7 @@ export abstract class Diff {
       this.schema.procedures[proc.name] = {
         definition: proc.definition,
         parameters: params.reduce(
-          (data: Record<string, ProcedureParamInfo>, row) => {
+          (data: Record<string, Record<string, any>>, row) => {
             data[row.name] = row;
             return data;
           },
@@ -324,9 +311,25 @@ export abstract class Diff {
       this.schema.summary.procedures[proc.name] = { parameters: params.length };
       this.log(`${proc.name} params: ${params.length}`);
     }
+    // FUNCTIONS
+    const functions = await this.getFunctions();
+    this.log(`functions in ${this.dbname}: ${functions.length}`);
+    for (let proc of functions) {
+      let params = await this.getFunctionParams(proc.name);
+      this.schema.functions[proc.name] = {
+        definition: proc.definition,
+        parameters: params.reduce(
+          (data: Record<string, Record<string, any>>, row) => {
+            data[row.name] = row;
+            return data;
+          },
+          {}
+        ),
+      };
+      this.schema.summary.functions[proc.name] = { parameters: params.length };
+      this.log(`${proc.name} params: ${params.length}`);
+    }
 
-    this.log(`closing connection..`);
-    this._connection.destroy();
     return this.schema;
   }
 
@@ -344,6 +347,7 @@ export abstract class Diff {
       ...this.compareTables(other),
       ...this.compareIndex(other),
       ...this.compareProcedures(other),
+      ...this.compareFunctions(other),
     ];
   }
 
@@ -364,7 +368,7 @@ export abstract class Diff {
 
     for (let table of allTables) {
       const [missingColumns, allColumns] = compareSchemaObjects(
-        "column",
+        "table.column",
         this.schema.tables[table].columns,
         this.schema.tables[table].columns,
         { in: table }
@@ -378,7 +382,7 @@ export abstract class Diff {
 
       for (let column of allColumns) {
         const [mismatchedColumns, _] = compareSchemaObjects(
-          "column",
+          "table.column",
           this.schema.tables[table].columns[column],
           other.schema.tables[table].columns[column],
           { name: column, in: table }
@@ -481,7 +485,7 @@ export abstract class Diff {
 
       // compare parameters
       const [missingParams, allParams] = compareSchemaObjects(
-        "procedure",
+        "procedure.parameter",
         thisProc.parameters,
         otherProc.parameters,
         { in: procName }
@@ -495,7 +499,7 @@ export abstract class Diff {
 
       for (let paramName of allParams) {
         const [mismatchParams, _] = compareSchemaObjects(
-          "parameter",
+          "procedure.parameter",
           thisProc.parameters[paramName],
           otherProc.parameters[paramName],
           { name: paramName, in: procName, remarks: "mismatch" }
@@ -511,9 +515,71 @@ export abstract class Diff {
     return diff;
   }
 
-  abstract getTables(): Promise<TableInfo[]>;
-  abstract getColumns(tableName: string): Promise<ColumnInfo[]>;
-  abstract getIndexes(tableName: string): Promise<IndexInfo[]>;
-  abstract getStoredProcedures(): Promise<ProcedureInfo[]>;
-  abstract getStoredProcParams(spName: string): Promise<ProcedureParamInfo[]>;
+  compareFunctions(other: this): Comparison[] {
+    const diff: Comparison[] = [];
+    const [missing, allStoredProcs] = compareSchemaObjects(
+      "function",
+      this.schema.functions,
+      other.schema.functions
+    );
+    diff.push(...missing);
+
+    for (let fnName of allStoredProcs) {
+      const thisProc = this.schema.functions[fnName];
+      const otherProc = other.schema.functions[fnName];
+
+      // compare body
+      const [mistmatchBody, _] = compareSchemaObjects(
+        "function",
+        thisProc,
+        otherProc,
+        {
+          name: fnName,
+          in: "definition",
+          whitespaces: this.comparisonOptions.whitespaces,
+        }
+      );
+      if (mistmatchBody.length) {
+        diff.push(...mistmatchBody);
+      }
+
+      // compare parameters
+      const [missingParams, allParams] = compareSchemaObjects(
+        "function.parameter",
+        thisProc.parameters,
+        otherProc.parameters,
+        { in: fnName }
+      );
+      if (missingParams.length) {
+        diff.push(...missingParams);
+        if (!this.comparisonOptions.eager) {
+          continue;
+        }
+      }
+      for (let paramName of allParams) {
+        const [mismatchParams, _] = compareSchemaObjects(
+          "function.parameter",
+          thisProc.parameters[paramName],
+          otherProc.parameters[paramName],
+          { name: paramName, in: fnName, remarks: "mismatch" }
+        );
+        if (mismatchParams.length) {
+          diff.push(...mismatchParams);
+          if (!this.comparisonOptions.eager) {
+            break;
+          }
+        }
+      }
+    }
+    return diff;
+  }
+
+  abstract getTables(): Promise<Record<string, any>[]>;
+  abstract getColumns(tableName: string): Promise<Record<string, any>[]>;
+  abstract getIndexes(tableName: string): Promise<Record<string, any>[]>;
+  abstract getStoredProcedures(): Promise<Record<string, any>[]>;
+  abstract getStoredProcParams(spName: string): Promise<Record<string, any>[]>;
+  abstract getFunctions(): Promise<Record<string, any>[]>;
+  abstract getFunctionParams(fnName: string): Promise<Record<string, any>[]>;
+  abstract showCreate(type: string, name: string): Promise<string | undefined>;
 }
