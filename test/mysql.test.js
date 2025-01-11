@@ -24,6 +24,7 @@ describe("test", () => {
     program.parse(
       [
         "compare",
+        "-a",
         "-w",
         "-p",
         "-o",

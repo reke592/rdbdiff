@@ -1,9 +1,10 @@
 import { Command } from "commander";
 import { MySqlDiff } from "./mysql-diff";
 import { Diff, ConnectionOptions, ComparisonOptions } from "./diff";
-import { basename, dirname, resolve } from "path";
+import { basename, dirname, join, resolve } from "path";
 import { URL } from "url";
 import { existsSync, mkdirSync, writeFileSync } from "fs";
+import { dumpToFile } from "./utils";
 
 type DiffOptions = Omit<ConnectionOptions, "client">;
 
@@ -33,21 +34,45 @@ function createConnection(url: URL, options: ComparisonOptions): Diff {
 
 const program = new Command();
 
+const exitCode = (code?: number | string | null | undefined) => {
+  if (process.env.NODE_ENV === "test") return;
+  process.exit(code);
+};
+
 program
   .command("compare <dbURL1> <dbURL2>")
   .option("-e", "eager check all errors in schema object")
-  .option("-v", "show console logs regarding database connection activity")
-  .option("-o <filename>", "output", "sqldiff.out.json")
-  .option("-t", "console.table if comparison issues were found.")
-  .option("-p", "pretty output")
-  .option("-a", "include A, B schema in output")
-  .option("-w", "check whitespace in function and procedure definitions")
+  .option("-a, --out-schema", "save A,B schema to a JSON file", false)
+  .option("-p, --pretty", "pretty output", false)
+  .option(
+    "-t, --console-table",
+    "console.table if comparison issues were found."
+  )
+  .option(
+    "-v, --verbose",
+    "show console logs regarding database connection activity"
+  )
+  .option(
+    "-w, --whitespaces",
+    "check whitespaces in function and procedure definitions"
+  )
+  .option("--out-dir <path>", "output directory")
+  .option(
+    "--out-comparison <filename>",
+    "save comparison data to a JSON file",
+    "comparison.json"
+  )
+  .option(
+    "--show-create",
+    "dump the create create statement of tables, functions stored procedure having comparison issues.",
+    false
+  )
   .description(
     `DB URL format: <protocol>://<user>[:password]@<address>[:port]/<dbname>
 
     example:
-    rdbdiff compare mysql://user@localhost:3308/db1 mysql://user@localhost:3308/db2
-    rdbdiff compare mysql://user:secret@localhost:3308/db1 mysql://user:secret@localhost:3308/db2
+    sqldiff compare mysql://user@localhost:3308/db1 mysql://user@localhost:3308/db2
+    sqldiff compare mysql://user:secret@localhost:3308/db1 mysql://user:secret@localhost:3308/db2
     `
   )
   .summary("Check the difference between database schemas.")
@@ -56,11 +81,15 @@ program
     const args = this.args;
     const eager = opts["e"] || false;
     const verbose = opts["v"] || false;
-    const outfile = opts["o"] || undefined;
-    const outTable = opts["t"] || false;
-    const pretty = opts["p"] || false;
-    const all = opts["a"] || false;
-    const whitespaces = opts["w"] || false;
+    const {
+      showCreate,
+      outDir,
+      outSchema,
+      outComparison,
+      pretty,
+      whitespaces,
+      consoleTable,
+    } = opts;
     const [dbUrl1, dbUrl2] = args;
     const url1 = URL.parse(dbUrl1);
     const url2 = URL.parse(dbUrl2);
@@ -75,42 +104,68 @@ program
     const B = createConnection(url2, { eager, verbose, whitespaces });
 
     // process
-    console.log("checking database schema. please wait..");
+    console.log("checking database schema..");
     await Promise.all([A.load(), B.load()]);
     const diff = A.compare(B);
     const ARecord = A.asRecord();
     const BRecord = B.asRecord();
-    const output = {
-      result: diff,
-      ...(all ? { A: ARecord, B: BRecord } : {}),
-    };
 
     // output
-    if (outfile) {
-      if (!existsSync(dirname(outfile))) {
-        mkdirSync(dirname(outfile), { recursive: true });
-      }
-      console.log(`writing output to ${resolve(outfile)}`);
-      writeFileSync(outfile, JSON.stringify(output, null, pretty ? 2 : 0));
-    } else {
-      console.log(JSON.stringify(output, null, pretty ? 2 : 0));
+    const stringify = (data: any) => JSON.stringify(data, null, pretty ? 2 : 0);
+    const dir = resolve(outDir || __dirname);
+
+    if (outSchema) {
+      const target = join(dir, "schema.json");
+      console.log(`writing schema JSON to ${target}`);
+      dumpToFile(target, stringify({ A: ARecord, B: BRecord }));
     }
 
-    if (process.env.NODE_ENV === "test") {
-      return;
+    if (outComparison) {
+      const target = join(dir, basename(outComparison));
+      console.log(`writing output to ${target}`);
+      dumpToFile(target, stringify(diff));
     }
+
+    if (showCreate) {
+      for (let item of diff) {
+        // currently not supported show create index
+        if (item.objectType === "index") continue;
+        const [type, paramOrColumn] = item.objectType.split(".");
+        const name = paramOrColumn ? item.in! : item.name;
+        const [createA, createB] = await Promise.all([
+          A.showCreate(type, name),
+          B.showCreate(type, name),
+        ]);
+        if (createA) {
+          dumpToFile(
+            join(dir, "show-create", "A", type, name + ".sql"),
+            createA
+          );
+        }
+        if (createB) {
+          dumpToFile(
+            join(dir, "show-create", "B", type, name + ".sql"),
+            createB
+          );
+        }
+      }
+    }
+
+    if (consoleTable) {
+      console.table(diff);
+    }
+
+    // close database connections
+    await Promise.allSettled([A.disconnect(), B.disconnect()]);
 
     // exit code
     if (diff.length) {
       console.error(
         `${diff.length} comparison issues were found between ${ARecord.label} and ${BRecord.label}.`
       );
-      if (outTable) {
-        console.table(diff);
-      }
-      process.exit(1);
+      exitCode(1);
     } else {
-      process.exit(0);
+      exitCode(0);
     }
   });
 
